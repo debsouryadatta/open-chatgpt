@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     // Upload to Uploadcare using the correct API format
     const uploadFormData = new FormData();
     uploadFormData.append("UPLOADCARE_PUB_KEY", publicKey);
+    uploadFormData.append("UPLOADCARE_STORE", "1"); // Store file permanently
     uploadFormData.append("file", file);
 
     console.log("Uploading to Uploadcare...");
@@ -74,7 +75,11 @@ export async function POST(req: NextRequest) {
       throw new Error("Invalid response from Uploadcare");
     }
 
-    const fileUrl = `https://ucarecdn.com/${uploadData.file}/`;
+    // Generate proper Uploadcare CDN URL with subdomain and filename
+    // Format: https://{subdomain}.ucarecd.net/{uuid}/{filename}
+    const sanitizedFilename = file.name.replace(/\s+/g, ''); // Remove spaces for URL compatibility
+    const fileUrl = `https://3gmp0o29va.ucarecd.net/${uploadData.file}/${sanitizedFilename}`;
+    console.log("Generated Uploadcare CDN URL:", fileUrl);
 
     // Extract text content for various file types
     let textContent = "";

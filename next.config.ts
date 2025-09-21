@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["ucarecdn.com"],
+    domains: ["3gmp0o29va.ucarecd.net", "ucarecdn.com"],
   },
   serverExternalPackages: ["pdf-parse"],
 };
