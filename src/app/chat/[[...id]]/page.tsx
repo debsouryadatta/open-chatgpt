@@ -80,7 +80,7 @@ export default function ChatPage() {
     isLoadingChat && !isNewChat && !isTransitioning && messages.length === 0;
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-full" key={chatId || 'new-chat'}>
       {shouldShowLoadingOverlay && <LoadingState message="Loading chat..." />}
 
       <ChatLayout

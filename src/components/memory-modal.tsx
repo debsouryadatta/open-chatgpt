@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import {  Trash2 } from "lucide-react";
+import {  Loader2, Trash2,  } from "lucide-react";
 import { toast } from "sonner";
 
 interface Memory {
@@ -20,6 +20,7 @@ interface MemoryModalProps {
   open: boolean;
   onClose: () => void;
   memories: Memory[];
+  loading?: boolean;
   onRefresh?: () => void;
   onMemoryDeleted?: (memoryId: string) => void;
 }
@@ -28,6 +29,7 @@ export default function MemoryModal({
   open,
   onClose,
   memories,
+  loading = false,
   onRefresh,
   onMemoryDeleted,
 }: MemoryModalProps) {
@@ -135,7 +137,12 @@ export default function MemoryModal({
 
         {/* Memories List */}
         <div className="px-6 pb-6 max-h-96 overflow-y-auto">
-          {optimisticMemories.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <Loader2 className="animate-spin h-8 w-8 text-white mx-auto mb-4" />
+              <p className="text-sm text-gray-400">Loading memories...</p>
+            </div>
+          ) : optimisticMemories.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <p className="text-sm">No memories saved yet</p>
             </div>
@@ -169,7 +176,7 @@ export default function MemoryModal({
         </div>
 
         {/* Delete All Button */}
-        {optimisticMemories.length > 0 && (
+        {!loading && optimisticMemories.length > 0 && (
           <div className="px-6 pb-6 flex justify-end">
             <button
               onClick={handleDeleteAll}

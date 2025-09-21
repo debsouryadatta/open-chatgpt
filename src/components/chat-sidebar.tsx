@@ -37,6 +37,7 @@ import { useEffect, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useChatList } from "@/hooks/use-chat-list";
 import { chatSidebarEvents } from "@/lib/chat-sidebar-events";
+import SearchChatModal from "@/components/search-chat-modal";
 
 interface ChatItem {
   chatId: string;
@@ -55,6 +56,7 @@ const navigationItems = [
 export function ChatSidebar() {
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -77,9 +79,27 @@ export function ChatSidebar() {
     return unsubscribe;
   }, [handleSidebarRefresh]);
 
+  // Add keyboard shortcut for search (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeydown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchModalOpen(true);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeydown);
+    return () => document.removeEventListener("keydown", handleKeydown);
+  }, []);
+
   // Start new chat: go to /chat for a fresh chat
   const handleNewChat = () => {
     router.push("/chat");
+  };
+
+  // Open search modal
+  const handleOpenSearch = () => {
+    setSearchModalOpen(true);
   };
 
   // Delete chat with optimistic updates
@@ -183,10 +203,16 @@ export function ChatSidebar() {
             <SidebarMenuButton asChild>
               <Button
                 variant="ghost"
-                className="w-full justify-start text-white hover:bg-gray-800/50 h-9 rounded-lg font-medium text-sm px-3 transition-colors duration-200"
+                className="w-full justify-between text-white hover:bg-gray-800/50 h-9 rounded-lg font-medium text-sm px-3 transition-colors duration-200 group"
+                onClick={handleOpenSearch}
               >
-                <Search className="w-4 h-4 mr-3 flex-shrink-0" />
-                Search chats
+                <div className="flex items-center cursor-pointer">
+                  <Search className="w-4 h-4 mr-3 flex-shrink-0" />
+                  Search chats
+                </div>
+                <span className="text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                  ⌘K
+                </span>
               </Button>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -265,13 +291,13 @@ export function ChatSidebar() {
                         ) : (
                           <>
                             <SidebarMenuButton
-                              className={`flex-1 text-sm hover:bg-transparent rounded-lg px-3 py-2 justify-start font-medium min-h-[36px] transition-colors duration-200 ${
+                              className={`cursor-pointer flex-1 text-sm hover:bg-transparent rounded-lg px-3 py-2 justify-start font-medium min-h-[36px] transition-colors duration-200 ${
                                 currentChatId === chat.chatId
                                   ? "text-white"
                                   : "text-gray-300 hover:text-white"
                               }`}
                               onClick={() =>
-                                window.location.assign(`/chat/${chat.chatId}`)
+                                router.push(`/chat/${chat.chatId}`)
                               }
                             >
                               <span className="truncate">
@@ -323,6 +349,13 @@ export function ChatSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      
+      {/* Search Chat Modal */}
+      <SearchChatModal
+        open={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        chats={chats}
+      />
     </Sidebar>
   );
 }

@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest) {
   await dbConnect();
 
   try {
-    const { chatId, messageIndex, newContent } = await req.json();
+    const { chatId, messageIndex, newContent, model } = await req.json();
 
     if (!chatId || messageIndex === undefined || !newContent) {
       return NextResponse.json(
@@ -152,8 +152,9 @@ export async function PUT(req: NextRequest) {
 
     // Generate AI response
     const aiStream = streamText({
-      model: mem0("gpt-4o-mini", { user_id: userId }),
+      model: mem0(model, { user_id: userId }),
       system: systemPrompt,
+      temperature: Number(`${model === "gpt-5-nano" || model === "o4-mini" ? 1 : 0}`),
       messages: coreMessages,
       onFinish: async (completion) => {
         chat.messages.push({

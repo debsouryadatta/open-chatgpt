@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useChat } from "ai/react";
 import { FileAttachment } from "@/components/file-upload-dropdown";
 import { refreshChatSidebar } from "@/lib/chat-sidebar-events";
+import { useModel } from "@/contexts/model-context";
 
 const getContentTypeForAttachment = (type: string): string => {
   switch (type) {
@@ -26,6 +27,7 @@ interface UseChatWithAttachmentsProps {
 }
 
 export function useChatWithAttachments({ chatId, onAttachmentChange }: UseChatWithAttachmentsProps = {}) {
+  const { selectedModel } = useModel();
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isNewChat, setIsNewChat] = useState<boolean>(!chatId);
@@ -33,14 +35,35 @@ export function useChatWithAttachments({ chatId, onAttachmentChange }: UseChatWi
   const [isEditingMessage, setIsEditingMessage] = useState<boolean>(false);
   const newChatIdRef = useRef<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState<string | undefined>(chatId);
+  const prevChatIdRef = useRef<string | undefined>(chatId);
 
   // Update currentChatId when chatId prop changes
   useEffect(() => {
-    if (chatId && chatId !== currentChatId) {
-      setCurrentChatId(chatId);
-      setIsNewChat(false);
+    const prevChatId = prevChatIdRef.current;
+    
+    // Update the ref to track the previous value
+    prevChatIdRef.current = chatId;
+    
+    // Only update state if chatId actually changed
+    if (chatId !== prevChatId) {
+      if (chatId) {
+        // Navigating to an existing chat
+        setCurrentChatId(chatId);
+        setIsNewChat(false);
+      } else {
+        // Navigating to a new chat (no chatId)
+        setCurrentChatId(undefined);
+        setIsNewChat(true);
+        // Clear the new chat ID ref when navigating to a fresh new chat
+        newChatIdRef.current = null;
+        // Clear messages when starting a new chat
+        setMessages([]);
+        // Clear attachments for new chat
+        setAttachments([]);
+        onAttachmentChange?.([]);
+      }
     }
-  }, [chatId]); // Remove currentChatId from dependency array to prevent infinite loop
+  }, [chatId]);
 
   const {
     messages,
@@ -50,6 +73,7 @@ export function useChatWithAttachments({ chatId, onAttachmentChange }: UseChatWi
     isLoading,
     setMessages,
   } = useChat({
+    id: currentChatId || 'new-chat', // Provide an ID to help manage state
     api: "/api/chat", // Always use the same endpoint
     onResponse(response) {
       if (!currentChatId) {
@@ -147,6 +171,7 @@ export function useChatWithAttachments({ chatId, onAttachmentChange }: UseChatWi
           chatId: currentChatId,
           messageIndex: actualMessageIndex,
           newContent,
+          model: selectedModel, // Send the selected model
         }),
       });
 
@@ -250,12 +275,17 @@ export function useChatWithAttachments({ chatId, onAttachmentChange }: UseChatWi
     };
     formEvent.preventDefault = () => {}; // Prevent double preventDefault
 
+    const requestBody = {
+      attachments: attachmentsForBackend, // Keep for backend processing
+      chatId: newChatIdRef.current || currentChatId, // Send the chat ID
+      model: selectedModel, // Send the selected model
+    };
+    
+    console.log('Request body being sent:', requestBody);
+
     originalHandleSubmit(e, {
       experimental_attachments: experimental_attachments,
-      body: {
-        attachments: attachmentsForBackend, // Keep for backend processing
-        chatId: newChatIdRef.current || currentChatId, // Send the chat ID
-      },
+      body: requestBody,
     });
   };
 

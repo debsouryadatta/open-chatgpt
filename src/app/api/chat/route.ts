@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   const url = new URL(req.url);
   let chatId = url.searchParams.get("id");
   const body = await req.json();
-  const { messages, attachments, chatId: bodyChatId } = body;
+  const { messages, attachments, chatId: bodyChatId, model } = body;
 
   // Use chatId from body if provided (for new chats), otherwise use URL param
   if (bodyChatId) {
@@ -255,10 +255,12 @@ export async function POST(req: NextRequest) {
   );
 
   console.log('Final processed messages for AI:', JSON.stringify(processedMessages, null, 2));
-
+  console.log('Using model:', model);
+  
   const aiStream = streamText({
-    model: mem0("gpt-4o-mini", { user_id: userId }),
+    model: mem0(model, { user_id: userId }),
     system: systemPrompt,
+    temperature: Number(`${model === "gpt-5-nano" || model === "o4-mini" ? 1 : 0}`),
     messages: processedMessages,
     onFinish: async (completion) => {
       chat.messages.push({
